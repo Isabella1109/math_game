@@ -1,16 +1,77 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, Star, CheckCircle2, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, RotateCcw, ArrowRight, Star, Home, XCircle, Trophy } from 'lucide-react';
 
-const MathGame = () => {
-  const [gameState, setGameState] = useState('menu');
-  const [score, setScore] = useState(0);
-  const [question, setQuestion] = useState({ a: 0, b: 0, op: '+', answer: 0, options: [] });
-  const [feedback, setFeedback] = useState(null);
-  const [timer, setTimer] = useState(10);
-  const [highScore, setHighScore] = useState(0);
+// --- CONSTANTS ---
+const COLORS = {
+  softBlue: '#D7E2E8',
+  paleYellow: '#FFB74D',
+  softCoral: '#FF8B8B',
+  softGreen: '#A8D8B9',
+  white: '#FFFFFF',
+  lightGray: '#F5F5F5',
+  softBlack: '#333333',
+  mutedGray: '#AAAAAA'
+};
 
-  // --- DING DING SOUND EFFECT ---
+const ADDITION_POOL = [
+  { n1: 2, n2: 3, target: 5 }, { n1: 4, n2: 2, target: 6 },
+  { n1: 5, n2: 1, target: 6 }, { n1: 3, n2: 3, target: 6 },
+  { n1: 1, n2: 4, target: 5 }, { n1: 6, n2: 2, target: 8 },
+  { n1: 2, n2: 5, target: 7 }, { n1: 4, n2: 4, target: 8 },
+  { n1: 7, n2: 2, target: 9 }, { n1: 3, n2: 5, target: 8 }
+];
+
+const SUBTRACTION_POOL = [
+  { n1: 5, n2: 2, target: 3 }, { n1: 6, n2: 3, target: 3 },
+  { n1: 8, n2: 4, target: 4 }, { n1: 7, n2: 2, target: 5 },
+  { n1: 9, n2: 5, target: 4 }, { n1: 4, n2: 1, target: 3 },
+  { n1: 10, n2: 6, target: 4 }, { n1: 8, n2: 3, target: 5 },
+  { n1: 6, n2: 4, target: 2 }, { n1: 5, n2: 4, target: 1 }
+];
+
+const EMOJIS = ['🍎', '🐱', '🐸', '🍓', '🐻', '🐥', '🍭', '🐶'];
+
+// --- COMPONENTS ---
+const ConfettiPiece = ({ index }) => {
+  const confettiColors = [COLORS.softBlue, COLORS.paleYellow, COLORS.softGreen, COLORS.softCoral];
+  const color = confettiColors[index % confettiColors.length];
+  const shapeType = index % 3; // 0: Circle, 1: Square, 2: Triangle
+
+  return (
+    <motion.div
+      initial={{ top: -20, left: `${Math.random() * 100}%`, rotate: 0 }}
+      animate={{ 
+        top: '110%', 
+        rotate: 360,
+        left: `${(Math.random() * 100) + (Math.random() * 20 - 10)}%` 
+      }}
+      transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, ease: "linear", delay: Math.random() * 2 }}
+      className="absolute z-50 pointer-events-none"
+      style={{ 
+        backgroundColor: color,
+        width: '12px',
+        height: '12px',
+        clipPath: shapeType === 2 ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 'none',
+        borderRadius: shapeType === 0 ? '50%' : shapeType === 1 ? '2px' : '0'
+      }}
+    />
+  );
+};
+
+export default function MathLab() {
+  const [gameState, setGameState] = useState('menu'); 
+  const [currentSet, setCurrentSet] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userAddedCount, setUserAddedCount] = useState(0);
+  const [removedIndices, setRemovedIndices] = useState([]);
+  const [status, setStatus] = useState('counting'); // counting, wrong, choosing, solved
+  const [selectedChoice, setSelectedChoice] = useState(null);
+  const [emoji, setEmoji] = useState('🍎');
+  const [firstTryCount, setFirstTryCount] = useState(0);
+  const [hasFailedThisQuestion, setHasFailedThisQuestion] = useState(false);
+
+  // --- SOUND EFFECT LOGIC ---
   const playDingDing = () => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -19,221 +80,285 @@ const MathGame = () => {
       const playTone = (freq, startTime, duration) => {
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(freq, startTime);
-        
         gainNode.gain.setValueAtTime(0, startTime);
         gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
         gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-
         oscillator.start(startTime);
         oscillator.stop(startTime + duration);
       };
 
       const now = audioCtx.currentTime;
-      // Two-tone "Ding Ding"
-      playTone(880, now, 0.15);         // First "Ding" (A5)
-      playTone(1174.66, now + 0.1, 0.2); // Second "Ding" (D6)
+      playTone(880, now, 0.15);         // First "Ding"
+      playTone(1174.66, now + 0.1, 0.2); // Second "Ding"
     } catch (e) {
-      console.error("Audio context error:", e);
+      console.error("Audio error:", e);
     }
   };
 
-  const generateQuestion = useCallback(() => {
-    const ops = ['+', '-'];
-    const op = ops[Math.floor(Math.random() * ops.length)];
-    let a, b, answer;
-
-    if (op === '+') {
-      a = Math.floor(Math.random() * 12) + 1;
-      b = Math.floor(Math.random() * 12) + 1;
-      answer = a + b;
-    } else {
-      a = Math.floor(Math.random() * 15) + 5;
-      b = Math.floor(Math.random() * a) + 1;
-      answer = a - b;
-    }
-
-    const options = new Set([answer]);
-    while (options.size < 4) {
-      const offset = Math.floor(Math.random() * 5) + 1;
-      options.add(Math.random() > 0.5 ? answer + offset : Math.max(0, answer - offset));
-    }
-
-    setQuestion({
-      a, b, op, answer,
-      options: Array.from(options).sort((x, y) => x - y)
+  const generateSet = () => {
+    const pattern = ['add', 'add', 'sub', 'sub', 'add', 'add', 'sub', 'sub', 'add', 'sub'];
+    const shuffledAdd = [...ADDITION_POOL].sort(() => Math.random() - 0.5);
+    const shuffledSub = [...SUBTRACTION_POOL].sort(() => Math.random() - 0.5);
+    let addIdx = 0, subIdx = 0;
+    
+    const newSet = pattern.map(type => {
+      const base = type === 'add' ? shuffledAdd[addIdx++] : shuffledSub[subIdx++];
+      const choices = new Set([base.target]);
+      while(choices.size < 4) {
+        const fake = Math.max(1, Math.min(10, base.target + (Math.floor(Math.random() * 5) - 2)));
+        choices.add(fake);
+      }
+      return { ...base, type, choices: Array.from(choices).sort((a, b) => a - b) };
     });
-    setTimer(10);
-    setFeedback(null);
-  }, []);
-
-  const startGame = () => {
-    setScore(0);
-    setGameState('playing');
-    generateQuestion();
+    
+    setCurrentSet(newSet);
+    setCurrentIndex(0);
+    setFirstTryCount(0);
+    loadQuestion(newSet[0]);
   };
 
-  const handleAnswer = (choice) => {
-    if (feedback) return;
+  const loadQuestion = (q) => {
+    if (!q) return;
+    setUserAddedCount(0);
+    setRemovedIndices([]);
+    setStatus('counting');
+    setSelectedChoice(null);
+    setHasFailedThisQuestion(false);
+    setEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)]);
+  };
 
-    if (choice === question.answer) {
-      setFeedback('correct');
-      setScore(s => s + 1);
-      playDingDing(); // <--- Sound triggered here
-      setTimeout(() => {
-        generateQuestion();
-      }, 600);
+  const handleCheck = () => {
+    const q = currentSet[currentIndex];
+    const isCorrect = q.type === 'add' ? userAddedCount === q.n2 : removedIndices.length === q.n2;
+    if (isCorrect) setStatus('choosing');
+    else { setStatus('wrong'); setHasFailedThisQuestion(true); }
+  };
+
+  const handleChoice = (val) => {
+    const q = currentSet[currentIndex];
+    setSelectedChoice(val);
+    if (val === q.target) {
+      playDingDing(); // Play sound on correct answer
+      if (!hasFailedThisQuestion) setFirstTryCount(prev => prev + 1);
+      setStatus('solved');
     } else {
-      setFeedback('wrong');
-      setTimeout(() => {
-        setGameState('gameOver');
-        if (score > highScore) setHighScore(score);
-      }, 800);
+      setHasFailedThisQuestion(true);
     }
   };
 
-  useEffect(() => {
-    let interval;
-    if (gameState === 'playing' && !feedback) {
-      interval = setInterval(() => {
-        setTimer(t => {
-          if (t <= 1) {
-            setGameState('gameOver');
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [gameState, feedback]);
+  const nextQuestion = () => {
+    if (currentIndex < 9) {
+      const nextIdx = currentIndex + 1;
+      setCurrentIndex(nextIdx);
+      loadQuestion(currentSet[nextIdx]);
+    } else setGameState('results');
+  };
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans select-none">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-        
-        {/* Header */}
-        <div className="bg-indigo-600 p-6 text-white flex justify-between items-center">
-          <div>
-            <p className="text-indigo-200 text-xs uppercase tracking-wider font-bold">Score</p>
-            <p className="text-3xl font-black">{score}</p>
+  // --- VIEWS ---
+  if (gameState === 'menu') {
+    return (
+      <div className="h-screen flex items-center justify-center p-6" style={{ backgroundColor: COLORS.white }}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} 
+          className="rounded-3xl p-10 shadow-xl text-center max-w-sm w-full border-2" 
+          style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
+          <div className="text-7xl mb-4">🧪</div>
+          <h1 className="text-4xl font-black mb-2" style={{ color: COLORS.softBlack }}>Math Lab</h1>
+          <p className="font-bold mb-8" style={{ color: COLORS.mutedGray }}>Let's experiment with numbers!</p>
+          <button 
+            onClick={() => { generateSet(); setGameState('playing'); }} 
+            className="w-full text-2xl font-black py-4 rounded-2xl shadow-md transition-transform active:scale-95"
+            style={{ backgroundColor: COLORS.softBlue, color: COLORS.softBlack }}
+          >
+            Start
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (gameState === 'results') {
+    return (
+      <div className="h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ backgroundColor: COLORS.white }}>
+        {Array.from({ length: 50 }).map((_, i) => <ConfettiPiece key={i} index={i} />)}
+        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="rounded-3xl p-10 shadow-2xl text-center max-w-sm w-full z-10 border-2" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softGreen }}>
+          <Trophy size={80} className="mx-auto mb-4" style={{ color: COLORS.paleYellow }} />
+          <h2 className="text-3xl font-black" style={{ color: COLORS.softBlack }}>Lab Report</h2>
+          <div className="my-8 rounded-2xl p-6" style={{ backgroundColor: COLORS.white }}>
+            <p className="font-black text-xs uppercase tracking-widest mb-1" style={{ color: COLORS.mutedGray }}>Perfect Experiments</p>
+            <div className="text-6xl font-black" style={{ color: COLORS.softBlack }}>{firstTryCount}<span className="text-2xl" style={{ color: COLORS.mutedGray }}>/10</span></div>
           </div>
-          <div className="text-right">
-            <p className="text-indigo-200 text-xs uppercase tracking-wider font-bold">Best</p>
-            <p className="text-xl font-bold">{highScore}</p>
+          <button 
+            onClick={() => setGameState('menu')} 
+            className="w-full text-xl font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md"
+            style={{ backgroundColor: COLORS.softBlue, color: COLORS.softBlack }}
+          >
+            <Home size={20} /> Play Again
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const q = currentSet[currentIndex];
+  return (
+    <div className="h-screen flex flex-col items-center p-4 font-sans overflow-y-auto" style={{ backgroundColor: COLORS.white }}>
+      {/* Header */}
+      <div className="w-full max-w-xl flex justify-between items-center mb-4">
+        <div className="px-4 py-2 rounded-2xl font-black shadow-sm" style={{ backgroundColor: COLORS.lightGray, color: COLORS.mutedGray }}>
+          Question {currentIndex + 1} / 10
+        </div>
+        <div className="px-4 py-2 rounded-2xl font-black text-white flex items-center gap-2 shadow-sm" style={{ backgroundColor: COLORS.paleYellow }}>
+          <Star size={18} fill="white" /> {firstTryCount}
+        </div>
+      </div>
+
+      {/* Main Card */}
+      <div className="w-full max-w-xl flex-1 rounded-3xl shadow-sm p-6 flex flex-col border-b-8 min-h-[500px]" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
+        <div className="text-center mb-6">
+          <h2 className="text-5xl font-black" style={{ color: COLORS.softBlack }}>
+            {q.n1} {q.type === 'add' ? '+' : '-'} {q.n2} = <span style={{ color: COLORS.paleYellow }}>{status === 'solved' ? q.target : '?'}</span>
+          </h2>
+        </div>
+
+        {/* Work Area */}
+        <div className="flex-1 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 relative min-h-[240px]" style={{ backgroundColor: COLORS.white, borderColor: COLORS.softBlue }}>
+          {q.type === 'add' ? (
+            <div className="flex flex-wrap items-center justify-center gap-6">
+              <div className="flex gap-3">
+                {Array.from({ length: q.n1 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <span className="text-4xl">{emoji}</span>
+                    <span className="text-xs font-bold mt-1" style={{ color: COLORS.mutedGray }}>{i + 1}</span>
+                  </div>
+                ))}
+              </div>
+              <Plus style={{ color: COLORS.mutedGray }} strokeWidth={3} />
+              <div className="min-w-[120px] min-h-[80px] p-3 rounded-2xl border-2 flex flex-wrap gap-3 items-center justify-center relative" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
+                {Array.from({ length: userAddedCount }).map((_, i) => (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} key={i} className="flex flex-col items-center">
+                    <span className="text-4xl">{emoji}</span>
+                    <span className="text-xs font-bold mt-1" style={{ color: COLORS.softBlack }}>{q.n1 + i + 1}</span>
+                  </motion.div>
+                ))}
+                {(status === 'counting' || status === 'wrong') && (
+                  <button 
+                    onClick={() => setUserAddedCount(prev => Math.min(prev + 1, 9))} 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-transform active:scale-90"
+                    style={{ backgroundColor: COLORS.softBlue, color: COLORS.softBlack }}
+                  >
+                    <Plus size={20} strokeWidth={4} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-5 max-w-sm">
+              {Array.from({ length: q.n1 }).map((_, i) => {
+                const isRemoved = removedIndices.includes(i);
+                return (
+                  <button 
+                    key={i} 
+                    onClick={() => (status === 'counting' || status === 'wrong') && setRemovedIndices(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                    className="relative flex flex-col items-center transition-all"
+                  >
+                    <span className={`text-5xl transition-all duration-300 ${isRemoved ? 'opacity-20 grayscale scale-90' : 'opacity-100'}`}>{emoji}</span>
+                    {isRemoved && (
+                      <motion.div initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 45 }} className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-1.5 rounded-full absolute" style={{ backgroundColor: COLORS.softCoral }} />
+                        <div className="w-12 h-1.5 rounded-full absolute rotate-90" style={{ backgroundColor: COLORS.softCoral }} />
+                      </motion.div>
+                    )}
+                    <span className="text-xs font-bold mt-1" style={{ color: isRemoved ? COLORS.mutedGray : COLORS.softBlack }}>{i + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          
+          <div className="absolute bottom-4 h-6">
+            <AnimatePresence>
+              {status === 'wrong' && (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-black flex items-center gap-2" style={{ color: COLORS.softCoral }}>
+                  <XCircle size={18}/> Try again!
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        <div className="p-8">
-          {gameState === 'menu' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-6">
-              <div className="bg-indigo-100 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Star className="w-10 h-10 text-indigo-600 fill-indigo-600" />
-              </div>
-              <h1 className="text-3xl font-black text-slate-800">Math Dash</h1>
-              <p className="text-slate-500">Solve as many as you can!</p>
+        {/* Interaction Area */}
+        <div className="h-32 flex flex-col items-center justify-center mt-6">
+          {(status === 'counting' || status === 'wrong') ? (
+            <div className="flex gap-4 w-full">
               <button 
-                onClick={startGame}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-xl"
+                onClick={() => {setUserAddedCount(0); setRemovedIndices([]); setStatus('counting');}} 
+                className="flex-1 py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95"
+                style={{ backgroundColor: COLORS.softCoral, color: COLORS.white }}
               >
-                Start Playing
+                <RotateCcw size={20} /> Reset
               </button>
-            </motion.div>
-          )}
-
-          {gameState === 'playing' && (
-            <div className="space-y-8">
-              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: "100%" }}
-                  animate={{ width: `${(timer / 10) * 100}%` }}
-                  className={`h-full ${timer < 4 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                />
-              </div>
-
-              <div className="text-center py-4">
-                <motion.div 
-                  key={question.a + question.b}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-6xl font-black text-slate-800 flex items-center justify-center gap-4"
-                >
-                  <span>{question.a}</span>
-                  <span className="text-indigo-500">{question.op}</span>
-                  <span>{question.b}</span>
-                </motion.div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {question.options.map((opt) => (
-                  <motion.button
-                    key={opt}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleAnswer(opt)}
-                    disabled={!!feedback}
-                    className={`
-                      py-6 rounded-2xl text-2xl font-bold border-b-4 transition-colors
-                      ${feedback === 'correct' && opt === question.answer ? 'bg-emerald-500 border-emerald-700 text-white' : 
-                        feedback === 'wrong' && opt !== question.answer ? 'bg-slate-100 border-slate-200 text-slate-400' :
-                        feedback === 'wrong' && opt === question.answer ? 'bg-emerald-100 border-emerald-200 text-emerald-700' :
-                        'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 active:bg-slate-100'}
-                    `}
+              <button 
+                onClick={handleCheck} 
+                className="flex-1 py-4 rounded-2xl font-black shadow-md transition-transform active:scale-95"
+                style={{ backgroundColor: COLORS.softGreen, color: COLORS.softBlack }}
+              >
+                Check Answer
+              </button>
+            </div>
+          ) : (status === 'choosing' || status === 'solved') ? (
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="flex gap-3">
+                {q.choices.map(choice => (
+                  <button
+                    key={choice}
+                    disabled={status === 'solved'}
+                    onClick={() => handleChoice(choice)}
+                    className="w-16 h-16 rounded-2xl text-2xl font-black transition-all shadow-md flex items-center justify-center border-4"
+                    style={{ 
+                      backgroundColor: selectedChoice === choice 
+                        ? (choice === q.target ? COLORS.softGreen : COLORS.softCoral)
+                        : COLORS.white,
+                      color: selectedChoice === choice && choice !== q.target ? COLORS.white : COLORS.softBlack,
+                      borderColor: (status === 'solved' && choice === q.target) ? COLORS.paleYellow : 'transparent'
+                    }}
                   >
-                    {opt}
-                  </motion.button>
+                    {choice}
+                  </button>
                 ))}
               </div>
-
-              <AnimatePresence>
-                {feedback && (
-                  <motion.div 
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex justify-center"
-                  >
-                    {feedback === 'correct' ? (
-                      <div className="flex items-center gap-2 text-emerald-600 font-bold">
-                        <CheckCircle2 className="w-6 h-6" /> Correct!
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-red-600 font-bold">
-                        <XCircle className="w-6 h-6" /> Game Over
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {status === 'solved' && (
+                <motion.button
+                  initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                  onClick={nextQuestion}
+                  className="mt-4 w-full py-4 rounded-2xl text-xl font-black shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95"
+                  style={{ backgroundColor: COLORS.softGreen, color: COLORS.softBlack }}
+                >
+                  {currentIndex === 9 ? 'Results' : 'OK'} <ArrowRight />
+                </motion.button>
+              )}
             </div>
-          )}
+          ) : null}
+        </div>
+      </div>
 
-          {gameState === 'gameOver' && (
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center space-y-6">
-              <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
-                <Trophy className="w-10 h-10 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-slate-800">Final Score: {score}</h2>
-                <p className="text-slate-500">Great effort!</p>
-              </div>
-              
-              <button 
-                onClick={startGame}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-xl"
-              >
-                <RefreshCw className="w-6 h-6" /> Play Again
-              </button>
-            </motion.div>
-          )}
+      {/* Progress Bar */}
+      <div className="w-full max-w-xl mt-6 mb-8">
+        <div className="h-4 rounded-full overflow-hidden flex p-1 shadow-inner" style={{ backgroundColor: COLORS.lightGray }}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="flex-1 mx-0.5 rounded-full transition-all duration-500"
+              style={{ 
+                backgroundColor: i < currentIndex ? COLORS.softGreen : i === currentIndex ? COLORS.softBlue : COLORS.mutedGray 
+              }}
+            />
+          ))}
         </div>
       </div>
     </div>
   );
-};
-
-export default MathGame;
+}
