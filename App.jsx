@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Play, RefreshCw, CheckCircle2, XCircle, Timer, Trophy, Star, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, RotateCcw, ArrowRight, Star, Home, XCircle, Trophy } from 'lucide-react';
 
 // --- CONSTANTS ---
 const COLORS = {
