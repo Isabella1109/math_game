@@ -1,18 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, RotateCcw, ArrowRight, Star, Home, XCircle, Trophy } from 'lucide-react';
 
-// --- CONSTANTS (Exact React 23 Palette) ---
+// --- STRICT COLOR PALETTE ---
 const COLORS = {
-  softBlue: '#D7E2E8',
-  paleYellow: '#FFB74D',
-  softCoral: '#FF8B8B',
-  softGreen: '#A8D8B9',
+  softBlue: '#D7E2E8',   // Buttons, accents
+  paleYellow: '#FFB74D', // Highlights, correct answer glow
+  softCoral: '#FF8B8B',  // Incorrect feedback, reset button
+  softGreen: '#A8D8B9',  // OK/Answer buttons, success states
   white: '#FFFFFF',
-  lightGray: '#F5F5F5',
-  softBlack: '#333333',
-  mutedGray: '#AAAAAA'
+  lightGray: '#F9FAFB',  // Neutral background
+  softBlack: '#374151',  // Text
+  mutedGray: '#9CA3AF'   // Secondary text
 };
+
+const PRAISES = [
+  "You're smart!", "Amazing job!", "Math Star!", "Way to go!",
+  "You're a genius!", "Perfect!", "Keep it up!", "Wow! Great work!"
+];
 
 const ADDITION_POOL = [
   { n1: 2, n2: 3, target: 5 }, { n1: 4, n2: 2, target: 6 },
@@ -32,82 +37,139 @@ const SUBTRACTION_POOL = [
 
 const EMOJIS = ['🍎', '🐱', '🐸', '🍓', '🐻', '🐥', '🍭', '🐶'];
 
-// --- COMPONENTS ---
-const ConfettiPiece = ({ index }) => {
-  const confettiColors = [COLORS.softBlue, COLORS.paleYellow, COLORS.softGreen, COLORS.softCoral];
-  const color = confettiColors[index % confettiColors.length];
-  const shapeType = index % 3; // 0: Circle, 1: Square, 2: Triangle
+// --- REACT 31 STYLE CONFETTI (High Energy, High Quantity, Palette Matched) ---
+const ConfettiBurst = () => {
+  const particleCount = 150; // Increased for "React 31" density
+  const palette = [COLORS.softBlue, COLORS.paleYellow, COLORS.softCoral, COLORS.softGreen];
+  
+  const particles = Array.from({ length: particleCount }).map((_, i) => {
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 20 + Math.random() * 30; // High initial speed
+    const drift = (Math.random() - 0.5) * 400; // Wide horizontal spread
+    const shapeType = Math.floor(Math.random() * 3); // 0: square, 1: circle, 2: ribbon
+    
+    return {
+      id: i,
+      initialX: 0,
+      initialY: 0,
+      // The "React 31" arc: burst up, then fall wide
+      peakX: Math.cos(angle) * velocity * 15,
+      peakY: Math.sin(angle) * velocity * 10 - 200, // Burst upwards
+      finalX: Math.cos(angle) * velocity * 20 + drift,
+      finalY: 800, // Fall off screen
+      rotation: Math.random() * 1080, // Multiple tumbles
+      scale: 0.4 + Math.random() * 1.2,
+      color: palette[i % palette.length],
+      shapeType,
+      duration: 3 + Math.random() * 2,
+      delay: Math.random() * 0.1
+    };
+  });
 
   return (
-    <motion.div
-      initial={{ top: -20, left: `${Math.random() * 100}%`, rotate: 0 }}
-      animate={{ 
-        top: '110%', 
-        rotate: 360,
-        left: `${(Math.random() * 100) + (Math.random() * 20 - 10)}%` 
-      }}
-      transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, ease: "linear", delay: Math.random() * 2 }}
-      className="absolute z-50 pointer-events-none"
-      style={{ 
-        backgroundColor: color,
-        width: '12px',
-        height: '12px',
-        clipPath: shapeType === 2 ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 'none',
-        borderRadius: shapeType === 0 ? '50%' : shapeType === 1 ? '2px' : '0'
-      }}
-    />
+    <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
+          animate={{ 
+            x: [0, p.peakX, p.finalX],
+            y: [0, p.peakY, p.finalY],
+            scale: [0, p.scale, p.scale, 0],
+            rotate: [0, p.rotation],
+            opacity: [1, 1, 1, 0]
+          }}
+          transition={{ 
+            duration: p.duration, 
+            ease: [0.23, 1, 0.32, 1], // Custom "React 31" ease for the pop
+            delay: p.delay 
+          }}
+          className="absolute"
+          style={{ 
+            width: p.shapeType === 2 ? '8px' : '12px', 
+            height: p.shapeType === 2 ? '20px' : '12px', 
+            backgroundColor: p.color,
+            borderRadius: p.shapeType === 1 ? '50%' : '2px',
+          }}
+        />
+      ))}
+    </div>
   );
 };
 
+// --- MAIN COMPONENT ---
 export default function MathLab() {
   const [gameState, setGameState] = useState('menu'); 
   const [currentSet, setCurrentSet] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAddedCount, setUserAddedCount] = useState(0);
   const [removedIndices, setRemovedIndices] = useState([]);
-  const [status, setStatus] = useState('counting'); // counting, wrong, choosing, solved
+  const [status, setStatus] = useState('counting'); 
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [emoji, setEmoji] = useState('🍎');
   const [firstTryCount, setFirstTryCount] = useState(0);
   const [hasFailedThisQuestion, setHasFailedThisQuestion] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  // --- SOUND EFFECT LOGIC ---
-  const playDingDing = () => {
+  const audioCtxRef = useRef(null);
+
+  const playDingDing = useCallback(() => {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const audioCtx = new AudioContext();
-      
-      const playTone = (freq, startTime, duration) => {
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(freq, startTime);
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
+      if (!audioCtxRef.current) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtxRef.current = new AudioContext();
+      }
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const playTone = (freq, time, dur) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.1, time + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + dur);
       };
+      playTone(880, now, 0.1);         
+      playTone(1174, now + 0.08, 0.15); 
+    } catch (e) {}
+  }, []);
 
-      const now = audioCtx.currentTime;
-      playTone(880, now, 0.15);         
-      playTone(1174.66, now + 0.1, 0.2); 
-    } catch (e) {
-      console.warn("Audio error:", e);
+  const speakText = (text) => {
+    if ('speechSynthesis' in window) {
+      setTimeout(() => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.pitch = 1.2;
+        utterance.rate = 0.9; 
+        window.speechSynthesis.speak(utterance);
+      }, 50);
     }
   };
 
-  const generateSet = () => {
+  const startNewGame = () => {
+    setCurrentIndex(0);
+    setFirstTryCount(0);
+    setUserAddedCount(0);
+    setRemovedIndices([]);
+    setStatus('counting');
+    setSelectedChoice(null);
+    setHasFailedThisQuestion(false);
+    setShowConfetti(false);
+
     const pattern = ['add', 'add', 'sub', 'sub', 'add', 'add', 'sub', 'sub', 'add', 'sub'];
     const shuffledAdd = [...ADDITION_POOL].sort(() => Math.random() - 0.5);
     const shuffledSub = [...SUBTRACTION_POOL].sort(() => Math.random() - 0.5);
-    let addIdx = 0, subIdx = 0;
     
+    let aI = 0, sI = 0;
     const newSet = pattern.map(type => {
-      const base = type === 'add' ? shuffledAdd[addIdx++] : shuffledSub[subIdx++];
+      const base = type === 'add' ? shuffledAdd[aI++] : shuffledSub[sI++];
       const choices = new Set([base.target]);
       while(choices.size < 4) {
         const fake = Math.max(1, Math.min(10, base.target + (Math.floor(Math.random() * 5) - 2)));
@@ -117,27 +179,20 @@ export default function MathLab() {
     });
     
     setCurrentSet(newSet);
-    setCurrentIndex(0);
-    setFirstTryCount(0);
-    loadQuestion(newSet[0]);
-  };
-
-  const loadQuestion = (q) => {
-    if (!q) return;
-    setUserAddedCount(0);
-    setRemovedIndices([]);
-    setStatus('counting');
-    setSelectedChoice(null);
-    setHasFailedThisQuestion(false);
     setEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)]);
+    setGameState('playing');
   };
 
   const handleCheck = () => {
     const q = currentSet[currentIndex];
     if (!q) return;
     const isCorrect = q.type === 'add' ? userAddedCount === q.n2 : removedIndices.length === q.n2;
-    if (isCorrect) setStatus('choosing');
-    else { setStatus('wrong'); setHasFailedThisQuestion(true); }
+    if (isCorrect) {
+      setStatus('choosing');
+    } else { 
+      setStatus('wrong'); 
+      setHasFailedThisQuestion(true); 
+    }
   };
 
   const handleChoice = (val) => {
@@ -145,9 +200,11 @@ export default function MathLab() {
     if (!q) return;
     setSelectedChoice(val);
     if (val === q.target) {
-      playDingDing(); 
-      if (!hasFailedThisQuestion) setFirstTryCount(prev => prev + 1);
       setStatus('solved');
+      setShowConfetti(true);
+      playDingDing(); 
+      speakText(PRAISES[Math.floor(Math.random() * PRAISES.length)]); 
+      if (!hasFailedThisQuestion) setFirstTryCount(prev => prev + 1);
     } else {
       setHasFailedThisQuestion(true);
     }
@@ -155,24 +212,30 @@ export default function MathLab() {
 
   const nextQuestion = () => {
     if (currentIndex < 9) {
-      const nextIdx = currentIndex + 1;
-      setCurrentIndex(nextIdx);
-      loadQuestion(currentSet[nextIdx]);
-    } else setGameState('results');
+      setCurrentIndex(prev => prev + 1);
+      setUserAddedCount(0);
+      setRemovedIndices([]);
+      setStatus('counting');
+      setSelectedChoice(null);
+      setHasFailedThisQuestion(false);
+      setShowConfetti(false);
+      setEmoji(EMOJIS[Math.floor(Math.random() * EMOJIS.length)]);
+    } else {
+      setGameState('results');
+    }
   };
 
-  // --- VIEWS ---
   if (gameState === 'menu') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: COLORS.white }}>
+      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} 
-          className="rounded-3xl p-10 shadow-xl text-center max-w-sm w-full border-2" 
+          className="rounded-3xl p-10 shadow-xl text-center max-w-sm w-full border-4" 
           style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
           <div className="text-7xl mb-4">🧪</div>
           <h1 className="text-4xl font-black mb-2" style={{ color: COLORS.softBlack }}>Math Lab</h1>
           <p className="font-bold mb-8" style={{ color: COLORS.mutedGray }}>Let's experiment with numbers!</p>
           <button 
-            onClick={() => { generateSet(); setGameState('playing'); }} 
+            onClick={startNewGame} 
             className="w-full text-2xl font-black py-4 rounded-2xl shadow-md transition-transform active:scale-95"
             style={{ backgroundColor: COLORS.softBlue, color: COLORS.softBlack }}
           >
@@ -185,12 +248,11 @@ export default function MathLab() {
 
   if (gameState === 'results') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ backgroundColor: COLORS.white }}>
-        {Array.from({ length: 50 }).map((_, i) => <ConfettiPiece key={i} index={i} />)}
-        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="rounded-3xl p-10 shadow-2xl text-center max-w-sm w-full z-10 border-2" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softGreen }}>
+      <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="rounded-3xl p-10 shadow-2xl text-center max-w-sm w-full border-4" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softGreen }}>
           <Trophy size={80} className="mx-auto mb-4" style={{ color: COLORS.paleYellow }} />
           <h2 className="text-3xl font-black" style={{ color: COLORS.softBlack }}>Lab Report</h2>
-          <div className="my-8 rounded-2xl p-6" style={{ backgroundColor: COLORS.white }}>
+          <div className="my-8 rounded-2xl p-6 bg-white border-2" style={{ borderColor: COLORS.softBlue }}>
             <p className="font-black text-xs uppercase tracking-widest mb-1" style={{ color: COLORS.mutedGray }}>Perfect Experiments</p>
             <div className="text-6xl font-black" style={{ color: COLORS.softBlack }}>{firstTryCount}<span className="text-2xl" style={{ color: COLORS.mutedGray }}>/10</span></div>
           </div>
@@ -210,10 +272,11 @@ export default function MathLab() {
   if (!q) return null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 font-sans overflow-y-auto" style={{ backgroundColor: COLORS.white }}>
+    <div className="min-h-screen flex flex-col items-center p-4 font-sans bg-white relative overflow-hidden">
+      
       {/* Header */}
       <div className="w-full max-w-xl flex justify-between items-center mb-4">
-        <div className="px-4 py-2 rounded-2xl font-black shadow-sm" style={{ backgroundColor: COLORS.lightGray, color: COLORS.mutedGray }}>
+        <div className="px-4 py-2 rounded-2xl font-black shadow-sm border-2" style={{ backgroundColor: COLORS.lightGray, color: COLORS.softBlack, borderColor: COLORS.softBlue }}>
           Question {currentIndex + 1} / 10
         </div>
         <div className="px-4 py-2 rounded-2xl font-black text-white flex items-center gap-2 shadow-sm" style={{ backgroundColor: COLORS.paleYellow }}>
@@ -222,15 +285,15 @@ export default function MathLab() {
       </div>
 
       {/* Main Card */}
-      <div className="w-full max-w-xl flex-1 rounded-3xl shadow-sm p-6 flex flex-col border-b-8 min-h-[500px]" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
-        <div className="text-center mb-6">
+      <div className="w-full max-w-xl flex-1 rounded-3xl shadow-sm p-6 flex flex-col border-b-8 min-h-[500px] relative" style={{ backgroundColor: COLORS.lightGray, borderColor: COLORS.softBlue }}>
+        <div className="text-center mb-6 flex items-center justify-center gap-4">
           <h2 className="text-5xl font-black" style={{ color: COLORS.softBlack }}>
             {q.n1} {q.type === 'add' ? '+' : '-'} {q.n2} = <span style={{ color: COLORS.paleYellow }}>{status === 'solved' ? q.target : '?'}</span>
           </h2>
         </div>
 
         {/* Work Area */}
-        <div className="flex-1 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 relative min-h-[240px]" style={{ backgroundColor: COLORS.white, borderColor: COLORS.softBlue }}>
+        <div className="flex-1 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 relative min-h-[240px] bg-white" style={{ borderColor: COLORS.softBlue }}>
           {q.type === 'add' ? (
             <div className="flex flex-wrap items-center justify-center gap-6">
               <div className="flex gap-3">
@@ -267,7 +330,11 @@ export default function MathLab() {
                 return (
                   <button 
                     key={i} 
-                    onClick={() => (status === 'counting' || status === 'wrong') && setRemovedIndices(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                    onClick={() => {
+                      if (status === 'counting' || status === 'wrong') {
+                        setRemovedIndices(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+                      }
+                    }}
                     className="relative flex flex-col items-center transition-all"
                   >
                     <span className={`text-5xl transition-all duration-300 ${isRemoved ? 'opacity-20 grayscale scale-90' : 'opacity-100'}`}>{emoji}</span>
@@ -342,7 +409,7 @@ export default function MathLab() {
                   className="mt-4 w-full py-4 rounded-2xl text-xl font-black shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95"
                   style={{ backgroundColor: COLORS.softGreen, color: COLORS.softBlack }}
                 >
-                  {currentIndex === 9 ? 'Results' : 'OK'} <ArrowRight />
+                  {currentIndex === 9 ? 'Results' : 'Next Question'} <ArrowRight />
                 </motion.button>
               )}
             </div>
@@ -364,6 +431,11 @@ export default function MathLab() {
           ))}
         </div>
       </div>
+
+      {/* REACT 31 STYLE CONFETTI OVERLAY */}
+      <AnimatePresence>
+        {showConfetti && <ConfettiBurst key="r31-styled-confetti" />}
+      </AnimatePresence>
     </div>
   );
 }
