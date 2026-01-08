@@ -37,32 +37,25 @@ const SUBTRACTION_POOL = [
 
 const EMOJIS = ['🍎', '🐱', '🐸', '🍓', '🐻', '🐥', '🍭', '🐶'];
 
-// --- REACT 31 STYLE CONFETTI (High Energy, High Quantity, Palette Matched) ---
+// --- CONFETTI COMPONENT ---
 const ConfettiBurst = () => {
-  const particleCount = 150; // Increased for "React 31" density
+  const particleCount = 80;
   const palette = [COLORS.softBlue, COLORS.paleYellow, COLORS.softCoral, COLORS.softGreen];
   
   const particles = Array.from({ length: particleCount }).map((_, i) => {
-    const angle = Math.random() * Math.PI * 2;
-    const velocity = 20 + Math.random() * 30; // High initial speed
-    const drift = (Math.random() - 0.5) * 400; // Wide horizontal spread
-    const shapeType = Math.floor(Math.random() * 3); // 0: square, 1: circle, 2: ribbon
+    const angle = (Math.random() * 360) * (Math.PI / 180);
+    const velocity = 15 + Math.random() * 20; 
+    const shapeType = Math.floor(Math.random() * 3); 
     
     return {
       id: i,
-      initialX: 0,
-      initialY: 0,
-      // The "React 31" arc: burst up, then fall wide
-      peakX: Math.cos(angle) * velocity * 15,
-      peakY: Math.sin(angle) * velocity * 10 - 200, // Burst upwards
-      finalX: Math.cos(angle) * velocity * 20 + drift,
-      finalY: 800, // Fall off screen
-      rotation: Math.random() * 1080, // Multiple tumbles
-      scale: 0.4 + Math.random() * 1.2,
+      x: Math.cos(angle) * velocity * 12,
+      y: Math.sin(angle) * velocity * 12,
+      rotation: Math.random() * 720,
+      scale: 0.6 + Math.random() * 0.8,
       color: palette[i % palette.length],
       shapeType,
-      duration: 3 + Math.random() * 2,
-      delay: Math.random() * 0.1
+      delay: Math.random() * 0.05
     };
   });
 
@@ -73,23 +66,26 @@ const ConfettiBurst = () => {
           key={p.id}
           initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
           animate={{ 
-            x: [0, p.peakX, p.finalX],
-            y: [0, p.peakY, p.finalY],
+            x: [0, p.x, p.x * 1.1],
+            y: [0, p.y, p.y + 600],
             scale: [0, p.scale, p.scale, 0],
             rotate: [0, p.rotation],
             opacity: [1, 1, 1, 0]
           }}
           transition={{ 
-            duration: p.duration, 
-            ease: [0.23, 1, 0.32, 1], // Custom "React 31" ease for the pop
+            duration: 2.8, 
+            ease: [0.1, 0.9, 0.3, 1],
             delay: p.delay 
           }}
           className="absolute"
           style={{ 
-            width: p.shapeType === 2 ? '8px' : '12px', 
-            height: p.shapeType === 2 ? '20px' : '12px', 
-            backgroundColor: p.color,
+            width: '14px', 
+            height: '14px', 
+            backgroundColor: p.shapeType !== 2 ? p.color : 'transparent',
             borderRadius: p.shapeType === 1 ? '50%' : '2px',
+            borderLeft: p.shapeType === 2 ? '7px solid transparent' : 'none',
+            borderRight: p.shapeType === 2 ? '7px solid transparent' : 'none',
+            borderBottom: p.shapeType === 2 ? `14px solid ${p.color}` : 'none',
           }}
         />
       ))}
@@ -113,15 +109,28 @@ export default function MathLab() {
 
   const audioCtxRef = useRef(null);
 
+  // Initialize Audio Context (Important for iOS)
+  const initAudio = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        audioCtxRef.current = new AudioContext();
+      }
+    }
+    // Resume immediately if suspended (common in iOS)
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+  }, []);
+
   const playDingDing = useCallback(() => {
     try {
-      if (!audioCtxRef.current) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtxRef.current = new AudioContext();
-      }
+      // Ensure initialized
+      if (!audioCtxRef.current) initAudio();
+      
       const ctx = audioCtxRef.current;
       if (!ctx) return;
-      if (ctx.state === 'suspended') ctx.resume();
+      
       const now = ctx.currentTime;
       const playTone = (freq, time, dur) => {
         const osc = ctx.createOscillator();
@@ -138,11 +147,14 @@ export default function MathLab() {
       };
       playTone(880, now, 0.1);         
       playTone(1174, now + 0.08, 0.15); 
-    } catch (e) {}
-  }, []);
+    } catch (e) {
+      console.error("Audio play failed", e);
+    }
+  }, [initAudio]);
 
   const speakText = (text) => {
     if ('speechSynthesis' in window) {
+      // Small delay helps iOS handle the speech queue better
       setTimeout(() => {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
@@ -154,6 +166,9 @@ export default function MathLab() {
   };
 
   const startNewGame = () => {
+    // 1. Initialize audio on user interaction (Fix for iOS silence)
+    initAudio();
+
     setCurrentIndex(0);
     setFirstTryCount(0);
     setUserAddedCount(0);
@@ -168,14 +183,23 @@ export default function MathLab() {
     const shuffledSub = [...SUBTRACTION_POOL].sort(() => Math.random() - 0.5);
     
     let aI = 0, sI = 0;
+    
     const newSet = pattern.map(type => {
       const base = type === 'add' ? shuffledAdd[aI++] : shuffledSub[sI++];
-      const choices = new Set([base.target]);
-      while(choices.size < 4) {
-        const fake = Math.max(1, Math.min(10, base.target + (Math.floor(Math.random() * 5) - 2)));
-        choices.add(fake);
-      }
-      return { ...base, type, choices: Array.from(choices).sort((a, b) => a - b) };
+      
+      // --- FIX: INFINITE LOOP PREVENTION ---
+      // Instead of a while loop that might never finish if the target is small (e.g., 1),
+      // we generate a pool of all possible numbers (1-10), remove the correct answer,
+      // shuffle them, and pick 3.
+      const allPossibleNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      const wrongAnswers = allPossibleNumbers
+        .filter(n => n !== base.target)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      
+      const finalChoices = [...wrongAnswers, base.target].sort((a, b) => a - b);
+
+      return { ...base, type, choices: finalChoices };
     });
     
     setCurrentSet(newSet);
@@ -432,9 +456,9 @@ export default function MathLab() {
         </div>
       </div>
 
-      {/* REACT 31 STYLE CONFETTI OVERLAY */}
+      {/* CONFETTI OVERLAY (Z-9999) */}
       <AnimatePresence>
-        {showConfetti && <ConfettiBurst key="r31-styled-confetti" />}
+        {showConfetti && <ConfettiBurst key="global-styled-confetti" />}
       </AnimatePresence>
     </div>
   );
