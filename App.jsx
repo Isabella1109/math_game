@@ -2886,6 +2886,75 @@ function NumberCombinationGame({ onHome }) {
 
 /* ---------- Count and Answer Game (Game 8) ---------- */
 
+/* Local shuffle helper (to avoid scope issues) */
+const caShuffle = (list) => {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/* Confetti (same as Number Decomposition) */
+const Confetti = ({ trigger }) => {
+  const particleCount = 80;
+  const palette = [COLORS.strokeBlue, COLORS.softGreen, COLORS.softCoral, COLORS.accent];
+  const particles = React.useMemo(
+    () =>
+      Array.from({ length: particleCount }).map((_, i) => {
+        const angle = Math.random() * 360 * (Math.PI / 180);
+        const velocity = 15 + Math.random() * 20;
+        const shapeType = Math.floor(Math.random() * 3);
+        return {
+          id: `${trigger}-${i}`,
+          x: Math.cos(angle) * velocity * 12,
+          y: Math.sin(angle) * velocity * 12,
+          rotation: Math.random() * 720,
+          scale: 0.6 + Math.random() * 0.8,
+          color: palette[i % palette.length],
+          shapeType,
+          delay: Math.random() * 0.05,
+        };
+      }),
+    [trigger]
+  );
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
+          animate={{
+            x: [0, p.x, p.x * 1.1],
+            y: [0, p.y, p.y + 600],
+            scale: [0, p.scale, p.scale, 0],
+            rotate: [0, p.rotation],
+            opacity: [1, 1, 1, 0],
+          }}
+          transition={{
+            duration: 2.8,
+            ease: [0.1, 0.9, 0.3, 1],
+            delay: p.delay,
+          }}
+          className="absolute"
+          style={{
+            width: '14px',
+            height: '14px',
+            backgroundColor: p.shapeType !== 2 ? p.color : 'transparent',
+            borderRadius: p.shapeType === 1 ? '50%' : '2px',
+            borderLeft: p.shapeType === 2 ? '7px solid transparent' : 'none',
+            borderRight: p.shapeType === 2 ? '7px solid transparent' : 'none',
+            borderBottom: p.shapeType === 2 ? `14px solid ${p.color}` : 'none',
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+/* Build a round of expressions */
 const caBuildRound = () => {
   const target = 3 + Math.floor(Math.random() * 8); // 3..10
   const numCorrect = Math.random() < 0.5 ? 2 : 3;
@@ -2956,33 +3025,23 @@ const caBuildRound = () => {
     options.push({ text, value, isCorrect: false, op });
   }
 
-  return { target, options: shuffle(options) };
+  return { target, options: caShuffle(options) };
 };
 
 function SumSubQuickGame({ onHome }) {
-  const [round, setRound] = useState(caBuildRound);
-  const [selection, setSelection] = useState([]);
-  const [status, setStatus] = useState('idle'); // idle | wrong | correct
-  const [stars, setStars] = useState(0);
-  const [confettiKey, setConfettiKey] = useState(0);
-  const [showOverlay, setShowOverlay] = useState(false);
+  const [round, setRound] = React.useState(caBuildRound);
+  const [selection, setSelection] = React.useState([]);
+  const [status, setStatus] = React.useState('idle'); // idle | wrong | correct
+  const [stars, setStars] = React.useState(0);
+  const [confettiKey, setConfettiKey] = React.useState(0);
+  const [showOverlay, setShowOverlay] = React.useState(false);
 
-  const correctIndices = useMemo(
+  const correctIndices = React.useMemo(
     () => round.options.map((o, i) => (o.isCorrect ? i : null)).filter((x) => x !== null),
     [round]
   );
 
   const canCheck = selection.length > 0;
-
-  const goHome = () => {
-    if (typeof window !== 'undefined') {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = '/';
-      }
-    }
-  };
 
   const toggleSelect = (idx) => {
     setSelection((prev) => {
@@ -3079,7 +3138,6 @@ function SumSubQuickGame({ onHome }) {
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          {/* Updated title to be static "Count and Answer" */}
           <h1
             className="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-center"
             style={{ color: COLORS.accent }}
@@ -3143,7 +3201,7 @@ function SumSubQuickGame({ onHome }) {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              onClick={newRound}
+              onClick={handleNext}
               className="w-full max-w-xl py-4 rounded-2xl font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 border-b-4"
               style={{
                 backgroundColor: COLORS.softGreen,
