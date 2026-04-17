@@ -442,21 +442,21 @@ function ArrowPathGrid({ onHome = () => {} }) {
               >
                 <button
                   onClick={handleReset}
-                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 flex items-center justify-center gap-2"
+                  className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: '#FF8B8B',
                     color: '#FFFFFF',
                     borderColor: '#FF8B8B',
                   }}
-              >
-                <RefreshCw className="w-5 h-5" />
+                >
+                  <RefreshCw className="w-5 h-5" />
                   Reset
                 </button>
                 <button
                   onClick={handleCheck}
                   disabled={!canCheck}
-                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex items-center justify-center gap-2"
-                style={{
+                  className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex items-center justify-center gap-2"
+                  style={{
                     backgroundColor: '#A8D8B9',
                     color: '#374151',
                     borderColor: '#86C7A2',
@@ -715,7 +715,7 @@ function DecompositionGame({ onHome }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1125,7 +1125,7 @@ function ShapeFinderGame({ onHome }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1444,7 +1444,7 @@ function EmojiPatternGame({ onHome }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1862,7 +1862,7 @@ function CountThreeFoodsGame({ onHome = () => {} }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -2736,7 +2736,7 @@ function NumberCombinationGame({ onHome }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white/80 backdrop-blur border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white/80 backdrop-blur border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -2759,7 +2759,7 @@ function NumberCombinationGame({ onHome }) {
 
         {/* Main Card */}
         <div
-          className="rounded-3xl shadow-sm p-4 md:p-5 space-y-4 relative overflow-hidden w-full flex flex-col"
+          className="rounded-3xl shadow-sm p-4 md:p-5 space-y-4 relative overflow-hidden w/full flex flex-col"
           style={{ backgroundColor: NC_COLORS.card, border: `1px solid ${NC_COLORS.border}`, minHeight: '60vh' }}
         >
           <div className="text-lg font-semibold text-center px-2" style={{ color: NC_COLORS.text }}>
@@ -2837,7 +2837,7 @@ function NumberCombinationGame({ onHome }) {
               <button
                 onClick={handleCheck}
                 disabled={!canCheck}
-                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex items-center justify-center gap-2"
+                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex itemscenter justify-center gap-2"
                 style={{
                   backgroundColor: NC_COLORS.softGreen,
                   color: NC_COLORS.softBlack,
@@ -2886,75 +2886,6 @@ function NumberCombinationGame({ onHome }) {
 
 /* ---------- Count and Answer Game (Game 8) ---------- */
 
-/* Local shuffle helper (to avoid scope issues) */
-const caShuffle = (list) => {
-  const a = [...list];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
-
-/* Confetti (same as Number Decomposition) */
-const CAConfetti = ({ trigger }) => {
-  const particleCount = 80;
-  const palette = [COLORS.strokeBlue, COLORS.softGreen, COLORS.softCoral, COLORS.accent];
-  const particles = React.useMemo(
-    () =>
-      Array.from({ length: particleCount }).map((_, i) => {
-        const angle = Math.random() * 360 * (Math.PI / 180);
-        const velocity = 15 + Math.random() * 20;
-        const shapeType = Math.floor(Math.random() * 3);
-        return {
-          id: `${trigger}-${i}`,
-          x: Math.cos(angle) * velocity * 12,
-          y: Math.sin(angle) * velocity * 12,
-          rotation: Math.random() * 720,
-          scale: 0.6 + Math.random() * 0.8,
-          color: palette[i % palette.length],
-          shapeType,
-          delay: Math.random() * 0.05,
-        };
-      }),
-    [trigger]
-  );
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
-          animate={{
-            x: [0, p.x, p.x * 1.1],
-            y: [0, p.y, p.y + 600],
-            scale: [0, p.scale, p.scale, 0],
-            rotate: [0, p.rotation],
-            opacity: [1, 1, 1, 0],
-          }}
-          transition={{
-            duration: 2.8,
-            ease: [0.1, 0.9, 0.3, 1],
-            delay: p.delay,
-          }}
-          className="absolute"
-          style={{
-            width: '14px',
-            height: '14px',
-            backgroundColor: p.shapeType !== 2 ? p.color : 'transparent',
-            borderRadius: p.shapeType === 1 ? '50%' : '2px',
-            borderLeft: p.shapeType === 2 ? '7px solid transparent' : 'none',
-            borderRight: p.shapeType === 2 ? '7px solid transparent' : 'none',
-            borderBottom: p.shapeType === 2 ? `14px solid ${p.color}` : 'none',
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-/* Build a round of expressions */
 const caBuildRound = () => {
   const target = 3 + Math.floor(Math.random() * 8); // 3..10
   const numCorrect = Math.random() < 0.5 ? 2 : 3;
@@ -3025,23 +2956,33 @@ const caBuildRound = () => {
     options.push({ text, value, isCorrect: false, op });
   }
 
-  return { target, options: caShuffle(options) };
+  return { target, options: shuffle(options) };
 };
 
 function SumSubQuickGame({ onHome }) {
-  const [round, setRound] = React.useState(caBuildRound);
-  const [selection, setSelection] = React.useState([]);
-  const [status, setStatus] = React.useState('idle'); // idle | wrong | correct
-  const [stars, setStars] = React.useState(0);
-  const [confettiKey, setConfettiKey] = React.useState(0);
-  const [showOverlay, setShowOverlay] = React.useState(false);
+  const [round, setRound] = useState(caBuildRound);
+  const [selection, setSelection] = useState([]);
+  const [status, setStatus] = useState('idle'); // idle | wrong | correct
+  const [stars, setStars] = useState(0);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [showOverlay, setShowOverlay] = useState(false);
 
-  const correctIndices = React.useMemo(
+  const correctIndices = useMemo(
     () => round.options.map((o, i) => (o.isCorrect ? i : null)).filter((x) => x !== null),
     [round]
   );
 
   const canCheck = selection.length > 0;
+
+  const goHome = () => {
+    if (typeof window !== 'undefined') {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
+    }
+  };
 
   const toggleSelect = (idx) => {
     setSelection((prev) => {
@@ -3096,7 +3037,7 @@ function SumSubQuickGame({ onHome }) {
           'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
       }}
     >
-      <AnimatePresence>{status === 'correct' && <CAConfetti trigger={confettiKey} />}</AnimatePresence>
+      <AnimatePresence>{status === 'correct' && <Confetti trigger={confettiKey} />}</AnimatePresence>
 
       <AnimatePresence>
         {showOverlay && (
@@ -3132,12 +3073,13 @@ function SumSubQuickGame({ onHome }) {
         <div className="relative flex items-center justify-between">
           <button
             onClick={onHome}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-full bg-white/80 backdrop-blur border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
+            className="inline-flex itemscenter justify-center px-3 py-2 rounded-full bg-white/80 backdrop-blur border border-gray-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-white transition focus:outline-none focus:ring-2 focus:ring-orange-200 focus:ring-offset-1"
             aria-label="Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
 
+          {/* Updated title to be static "Count and Answer" */}
           <h1
             className="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-center"
             style={{ color: COLORS.accent }}
@@ -3155,7 +3097,7 @@ function SumSubQuickGame({ onHome }) {
 
         {/* Main Card */}
         <div
-          className="rounded-3xl shadow-sm p-4 md:p-5 space-y-4 relative overflow-hidden w-full flex flex-col"
+          className="rounded-3xl shadow-sm p-4 md:p-5 space-y-4 relative overflow-hidden w/full flex flex-col"
           style={{ backgroundColor: COLORS.card, border: `1px solid ${COLORS.border}`, minHeight: '60vh' }}
         >
           {/* Prompt */}
@@ -3165,7 +3107,7 @@ function SumSubQuickGame({ onHome }) {
 
           {/* Game area */}
           <div
-            className="w-full rounded-2xl border p-4 md:p-5 flex-1"
+            className="w/full rounded-2xl border p-4 md:p-5 flex-1"
             style={{ backgroundColor: COLORS.white, borderColor: COLORS.white, flexBasis: '70%' }}
           >
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 h-full">
@@ -3202,7 +3144,7 @@ function SumSubQuickGame({ onHome }) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
               onClick={handleNext}
-              className="w-full max-w-xl py-4 rounded-2xl font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 border-b-4"
+              className="w/full max-w-xl py-4 rounded-2xl font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 border-b-4"
               style={{
                 backgroundColor: COLORS.softGreen,
                 color: COLORS.softBlack,
@@ -3217,15 +3159,15 @@ function SumSubQuickGame({ onHome }) {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              className="w-full max-w-xl flex gap-3"
+              className="w/full max-w-xl flex gap-3"
             >
               <button
                 onClick={handleReset}
-                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 flex items-center justify-center gap-2"
+                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 flex itemscenter justify-center gap-2"
                 style={{
-                  backgroundColor: COLORS.softCoral,
-                  color: COLORS.card,
-                  borderColor: COLORS.softCoral,
+                  backgroundColor: '#FF8B8B',
+                  color: COLORS.text,
+                  borderColor: '#D1D5DB',
                 }}
               >
                 <RefreshCw className="w-5 h-5" />
@@ -3234,7 +3176,7 @@ function SumSubQuickGame({ onHome }) {
               <button
                 onClick={handleCheck}
                 disabled={!canCheck}
-                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex items-center justify-center gap-2"
+                className="flex-1 py-4 rounded-2xl font-black text-base shadow-lg transition-transform active:scale-95 border-b-4 disabled:opacity-60 disabled:active:scale-100 flex itemscenter justify-center gap-2"
                 style={{
                   backgroundColor: COLORS.softGreen,
                   color: COLORS.softBlack,
@@ -3250,7 +3192,6 @@ function SumSubQuickGame({ onHome }) {
     </div>
   );
 }
-
 
 /* ---------- App Shell ---------- */
 
@@ -3283,7 +3224,7 @@ function GamesHub() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="min-h-screen flex items-center justify-center p-6"
+            className="min-h-screen flex itemsCenter justify-center p-6"
             style={{ backgroundColor: 'transparent' }}
           >
             <motion.div
