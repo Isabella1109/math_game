@@ -3096,54 +3096,42 @@ function SumSubQuickGame({ onHome }) {
         </div>
 
         {/* Main Card */}
-        <div className="text-center text-base font-semibold leading-snug" style={{ color: COLORS.subtext }}>
-          Tap the strip that shows {round.correct.a} + {round.correct.b} = {round.total}.
-        </div>
+        <div
+          className="rounded-3xl shadow-sm p-4 md:p-5 space-y-4 relative overflow-hidden w/full flex flex-col"
+          style={{ backgroundColor: COLORS.card, border: `1px solid ${COLORS.border}`, minHeight: '60vh' }}
+        >
+          {/* Prompt */}
+          <div className="text-lg font-semibold text-center px-2" style={{ color: COLORS.text }}>
+            Choose those equals {round.target}.
+          </div>
 
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
-            {round.options.map((opt, idx) => {
-              const isSelected = selection === idx;
-              const isCorrect =
-                status === 'correct' &&
-                Math.min(opt.a, opt.b) === Math.min(round.correct.a, round.correct.b) &&
-                Math.max(opt.a, opt.b) === Math.max(round.correct.a, round.correct.b);
-              const isWrongSel = status === 'wrong' && isSelected;
-              const bg =
-                isCorrect ? COLORS.softGreen : isWrongSel ? COLORS.softCoral : isSelected ? COLORS.softBlue : COLORS.white;
-              const border = isCorrect
-                ? COLORS.strokeGreen
-                : isWrongSel
-                ? COLORS.softCoral
-                : isSelected
-                ? COLORS.strokeBlue
-                : 'transparent';
-
-              return (
-                <button
-                  key={`${opt.a}-${opt.b}-${idx}`}
-                  onClick={() => setSelection(idx)}
-                  className="w-full rounded-xl border shadow-sm px-3 py-5 md:py-6 flex items-center justify-center transition active:scale-95"
-                  style={{
-                    backgroundColor: bg,
-                    borderColor: border,
-                    color: COLORS.text,
-                    minHeight: '150px',
-                  }}
-                >
-                  <div className="flex items-center flex-wrap gap-2 justify-center">
-                    {Array.from({ length: opt.a }).map((_, i) => (
-                      <Shape key={`a-${i}`} type={round.shape} color="#EC4899" />
-                    ))}
-                    {Array.from({ length: opt.b }).map((_, i) => (
-                      <Shape key={`b-${i}`} type={round.shape} color="#3B82F6" />
-                    ))}
-                  </div>
-                </button>
-              );
-            })}
+          {/* Game area */}
+          <div
+            className="w/full rounded-2xl border p-4 md:p-5 flex-1"
+            style={{ backgroundColor: COLORS.white, borderColor: COLORS.white, flexBasis: '70%' }}
+          >
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 h-full">
+              {round.options.map((opt, idx) => {
+                const isSelected = selection.includes(idx);
+                const shouldHighlightCorrect = status === 'correct' && opt.isCorrect;
+                const bg = isSelected ? COLORS.softBlue : shouldHighlightCorrect ? COLORS.softGreen : COLORS.white;
+                const borderC = isSelected ? COLORS.softBlue : shouldHighlightCorrect ? COLORS.strokeGreen : COLORS.border;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => toggleSelect(idx)}
+                    className="w-full h-full rounded-2xl border shadow-sm flex items-center justify-center px-3 py-4 text-center transition active:scale-95"
+                    style={{ backgroundColor: bg, borderColor: borderC, color: COLORS.text }}
+                  >
+                    <div className="text-lg md:text-xl font-semibold tabular-nums">{opt.text}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
+
+        <div className="h-4" />
       </div>
 
       <div className="fixed bottom-4 w-full flex justify-center px-4 z-20">
@@ -3154,7 +3142,7 @@ function SumSubQuickGame({ onHome }) {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              onClick={newRound}
+              onClick={handleNext}
               className="w-full max-w-xl py-4 rounded-2xl font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 border-b-4"
               style={{
                 backgroundColor: COLORS.softGreen,
