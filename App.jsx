@@ -2896,64 +2896,6 @@ const caShuffle = (list) => {
   return a;
 };
 
-/* Confetti (same as Number Decomposition) */
-const Confetti = ({ trigger }) => {
-  const particleCount = 80;
-  const palette = [COLORS.strokeBlue, COLORS.softGreen, COLORS.softCoral, COLORS.accent];
-  const particles = React.useMemo(
-    () =>
-      Array.from({ length: particleCount }).map((_, i) => {
-        const angle = Math.random() * 360 * (Math.PI / 180);
-        const velocity = 15 + Math.random() * 20;
-        const shapeType = Math.floor(Math.random() * 3);
-        return {
-          id: `${trigger}-${i}`,
-          x: Math.cos(angle) * velocity * 12,
-          y: Math.sin(angle) * velocity * 12,
-          rotation: Math.random() * 720,
-          scale: 0.6 + Math.random() * 0.8,
-          color: palette[i % palette.length],
-          shapeType,
-          delay: Math.random() * 0.05,
-        };
-      }),
-    [trigger]
-  );
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          initial={{ x: 0, y: 0, scale: 0, rotate: 0, opacity: 1 }}
-          animate={{
-            x: [0, p.x, p.x * 1.1],
-            y: [0, p.y, p.y + 600],
-            scale: [0, p.scale, p.scale, 0],
-            rotate: [0, p.rotation],
-            opacity: [1, 1, 1, 0],
-          }}
-          transition={{
-            duration: 2.8,
-            ease: [0.1, 0.9, 0.3, 1],
-            delay: p.delay,
-          }}
-          className="absolute"
-          style={{
-            width: '14px',
-            height: '14px',
-            backgroundColor: p.shapeType !== 2 ? p.color : 'transparent',
-            borderRadius: p.shapeType === 1 ? '50%' : '2px',
-            borderLeft: p.shapeType === 2 ? '7px solid transparent' : 'none',
-            borderRight: p.shapeType === 2 ? '7px solid transparent' : 'none',
-            borderBottom: p.shapeType === 2 ? `14px solid ${p.color}` : 'none',
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
 /* Build a round of expressions */
 const caBuildRound = () => {
   const target = 3 + Math.floor(Math.random() * 8); // 3..10
